@@ -146,7 +146,7 @@
         1. 值类型用Short.compare类似的
         2. 引用类型递归调用compareTo，如果没有实现这个接口的话，用Comparator代替
         3. 有多个重要的属性，按重要性排序比较，有一个不相等的即是比较完成，或者直接用Comparator中的静态构造函数
-    - 不要用o1-o2或者o1<o2这种形式，要用Short.compare或者Comparator中的静态构造函数
+    - 不要用o1-o2或者o1&lt;o2这种形式，要用Short.compare或者Comparator中的静态构造函数
 
 ## 类和接口
 
@@ -287,14 +287,15 @@
 ## 泛型
 
 1. **不使用原始类型**
+
     - 原始类型存在原因是为了兼容没有泛型之前的版本
     - 不要使用原始类型（没有泛型参数化的），不然的话会失去所有的安全性和表达性来自泛型提供的益处
-    - List<String>不是List<Object>的子类，但是List的子类
+    - List&lt;String&gt;不是List&lt;Object&gt;的子类，但是List的子类
     - 不能向Collection<?>中放除了null之外的任何对象，也不能对从其中取出来的对象做任何假设
         - 用泛型方法
         - 写一个私有的泛型方法，去实现参数是Collection<?>的这个方法
     - 不使用原始类型的两个例外
-        1. List<String>.class这种的，这是有语法错误的
+        1. List&lt;String&gt;.class这种的，这是有语法错误的
         2. instanceof 运算符
             - 只可能使用Set<?>，但是没有作用
             - 常规的写法，一定要用这种写法，不要使用原始类型
@@ -305,18 +306,20 @@
             ```
 
 2. **消除未检查异常**
+
     - 如果不能消除一个warning，但是可以证明这个warning是类型安全的，可以使用@SuppressWarnings("unchecked")，来禁止这个警告
     - 禁止警告的注解可以用到什么地方，从局部变量，到整个类，但是只能用到声明语句当中
     - 最小作用域的使用消除警告注解
     - 使用这个注解的时候，加注释，说明为什么是安全的
 
 3. **list优于数组**
+
     - 数组与list的区别
-        - Long[] 是Object[]的子类，但是List<Long>不是List<Object>的
+        - Long[] 是Object[]的子类，但是List&lt;Long&gt;不是List&lt;Object&gt;的子类
         - 数组是具体化的，只有在运行时才会知道元素的类型（在编译时可以把String放到一个Long[]中，但运行时会报错）；泛型是用擦除实现，在编译时限制元素类型，在运行时去掉元素类型
     - 因为基本原理不同，泛型与数组不能共存
-        - new List<E>[]
-        - new List<String>[]
+        - new List&lt;E&gt;[]
+        - new List&lt;String&gt;[]
         - new E[]
-        - new List<?>[]
-        - new Map<?,?>[]
+        - new List&lt;?&gt;[]
+        - new Map&lt;?,?&gt;[]
