@@ -6,6 +6,8 @@
 2. [对象的能用方法](#对象的能用方法)
 3. [类和接口](#类和接口)
 4. [泛型](#泛型)
+5. [枚举和注解](#枚举和注解)
+6. [Lamda和Stream](#Lamda和Stream)
 
 ---
 
@@ -289,11 +291,15 @@
 1. **不使用原始类型**
 
     - 原始类型存在原因是为了兼容没有泛型之前的版本
+
     - 不要使用原始类型（没有泛型参数化的），不然的话会失去所有的安全性和表达性来自泛型提供的益处
+
     - List&lt;String&gt;不是List&lt;Object&gt;的子类，但是List的子类
+
     - 不能向Collection<?>中放除了null之外的任何对象，也不能对从其中取出来的对象做任何假设
         - 用泛型方法
         - 写一个私有的泛型方法，去实现参数是Collection<?>的这个方法
+
     - 不使用原始类型的两个例外
         1. List&lt;String&gt;.class这种的，这是有语法错误的
         2. instanceof 运算符
@@ -308,8 +314,11 @@
 2. **消除未检查异常**
 
     - 如果不能消除一个warning，但是可以证明这个warning是类型安全的，可以使用@SuppressWarnings("unchecked")，来禁止这个警告
+
     - 禁止警告的注解可以用到什么地方，从局部变量，到整个类，但是只能用到声明语句当中
+
     - 最小作用域的使用消除警告注解
+
     - 使用这个注解的时候，加注释，说明为什么是安全的
 
 3. **list优于数组**
@@ -317,9 +326,242 @@
     - 数组与list的区别
         - Long[] 是Object[]的子类，但是List&lt;Long&gt;不是List&lt;Object&gt;的子类
         - 数组是具体化的，只有在运行时才会知道元素的类型（在编译时可以把String放到一个Long[]中，但运行时会报错）；泛型是用擦除实现，在编译时限制元素类型，在运行时去掉元素类型
+
     - 因为基本原理不同，泛型与数组不能共存
-        - new List&lt;E&gt;[]
-        - new List&lt;String&gt;[]
-        - new E[]
-        - new List&lt;?&gt;[]
-        - new Map&lt;?,?&gt;[]
+        - 以下形式是非法的
+            - new List&lt;E&gt;[]
+            - new List&lt;String&gt;[]
+            - new E[]
+        - 这种是合法的，只有这种没有界限的通配类型是具体化的
+            - new List&lt;?&gt;[]
+            - new Map&lt;?,?&gt;[]
+
+    - **泛型的实现原理**
+        - 编译时强制元素类型
+        - 编译时会在合适的地方加入cast
+        - 运行时擦除类型信息，为了兼容
+
+    - 为了性能的时候，可以使用数组，如arraylist，hashmap，但是要抑制警告，且保证没有问题
+
+4. **优先考虑泛型**
+
+5. **优先考虑泛型方法**
+
+6. **用限定通配符增加API的灵活性**
+
+    - 为了获得最大灵活性，在表示生产者或者消费者的输入参数上，使用有限定的通配符类型
+
+    - PECS stands for producer-extends, consumer-super.
+
+    - 返回值的类型不要使用限定通配符类型
+
+    - 如果类的使用者，不得不考虑通配符类型，那么这个类的API可能有些地方有问题
+
+    - Comparable,Comparator总是消费者，应该用<? super T>
+
+    - 如果一个类型参数在一个函数中只出现了一次，将它替换成通配符类型
+
+7. **合理的结合泛型和可变参数**
+
+    - 在泛型可变数组参数中存储值是不安全的，即在可变参数中使用泛型参数是不安全的
+
+    - java7中可以使用@SafeVarargs注解，在可变参数函数使用泛型参数时
+
+    - 让另外一个方法访问可变参数的数组是不安全的，两个例外
+        1. 将该数组传递给用@SafeVarargs标记的可变参数方法
+        2. 将该数组传递给另一个固定参数的方法，且该方法仅仅是计算这个数组中的一些东西
+
+    - 只要是可变参数方法中用泛型，就要使用@SafeVarargs注解，也就是说不要写不安全泛型可变参数方法，即在必须确保安全的情况下，使用这个注解
+
+    - 保证泛型可变参数安全的两个要点
+        1. 不在可变参数数组中存储额外的任何东西
+        2. 不要让该数组对任何不信任的代码可见
+
+    - @SafeVarargs
+        - 仅在不可被覆写的方法上有效
+        - Java8中，仅在static methond和final的实例方法上有效
+        - Java9中，以private 实例方法上也是有效的了
+
+    - 在泛型可变参数的方法中，必要的时候可以用List代替可变参数
+
+8. **使用类型安全的异构容器（能够容纳不同类型对象的容器）**
+
+    - Collections.checkedSet checkedList, checkedMap加进了类型检查，用来防止不对的类型被放进去
+
+    - List&lt;String&gt;.class语法是错误的
+
+    - Class  asSubclass
+
+    - 有个异构容器的示例代码Map<Class<?>, Object>
+    ```
+    public class Favorites {
+        private Map<Class<?>, Object> favorites = new HashMap<Class<?>, Object>();
+
+        public <T> void putFavorite(Class<T> type, T instance) {
+            if (type == null)
+            throw new NullPointerException("Type is null");
+            favorites.put(type, instance);
+        }
+
+        public <T> T getFavorite(Class<T> type) {
+            return type.cast(favorites.get(type));
+        }
+    }
+    ```
+
+## 枚举和注解
+
+1. **用枚举代替整型常量**
+
+    - **枚举的特性**
+
+        - 枚举可以实现接口
+
+        - 枚举中可以有属性和方法，且可用各种访问权限去修饰，属性要用final修饰
+
+        - 高质量的实现了object的所有方法
+            - euqals, clone, hashCode不能被覆写是final的
+
+        - 实现了Comparable接口
+
+        - 实现了Serializable接口
+
+        - 枚举天生是不可变的
+
+        - **初始化顺序**
+
+            - **与普通类正相反（对static域来说，其他顺序跟普通类是一样的），枚举最后进行static初始化，**
+
+                - 在构造方法中不能访问static域，但是原始类型或String除外
+                - 在构造方法中不枚举常量，不能互相访问
+
+    - **使用方法**
+
+        - 只在一个类中使用，使其成为类的内部类
+
+        - 被一个包中使用，使其为包访问权限
+
+        - 被广泛的使用，使其成为public的顶层类
+
+        - 尽量不暴露方法为public，尽量小（private，package）
+
+        - 如果实现了toString方法，考虑实现一个fromString方法
+
+        - 需要用switch的时候，且代码有很多重复，考虑使用策略模式（有个嵌套的子enum）
+
+    - switch的使用场合
+
+        - 在不增加枚举常量的情况下增加枚举的形为，枚举类不在自己的控制之下
+
+        - 在自己的控制下，也可以增加行为，且增加的形为不适合放到枚举类当中
+
+    - 使用场合
+
+        - 在任何时候使用枚举，当在编译时已经可以确定的一组常量时
+
+2. **用实例属性代替ordinals**
+
+    - 不要使用ordinal
+
+    - 当一定要这么搞的话，将int存储到成员属性当中
+
+    - ordinal是被设计用于EnumSet，EnumMap这样的数据结构的，如果不是写这样的代码的话，不要使用ordinal
+
+3. **用EnumSet代替位操作**
+
+    - java9之前创建是一个可变对象，用Collections.unmodifiableSet来包装
+
+    - 不要用位运算，没有理由不使用EnumSet
+
+4. **用EnumMap代替ordinal来索引**
+
+    - EnumMap内部是用数组实现的，因此性能是可以的
+
+    - 使用ordinal去索引数组不好，用EnumMap代替
+
+    - 如果是状态嵌套的话，用EnumMap<..., EnumMap<....>>
+
+5. **用接口模拟可扩展的枚举**
+
+    - &lt;T extends Enum&lt;T&gt; & Operation&gt;
+
+    - 虽然不能编写可扩展的枚举类型，但是你可以编写一个接口来配合实现接口的基本的枚举类型，来对它进行模拟
+
+6. **注解优于命名模式**
+
+    - 命名模式有3个缺点
+        1. 拼写错误导致问题
+        2. 不能保证被用于恰当的程序上
+        3. 不能将参数值与程序结合起来
+
+    - 当可以使用注解的时候，没有理由去使用命名模式
+
+    - 应该使用java预先定义的注解
+
+7. **始终使用Override注解**
+
+    - 在确定是要覆盖基类方法时，要用Override注解
+
+    - 一个例外是，如果这个类不是抽象的，且覆盖一个抽象方法时，可以不用，因为如果不覆盖这个方法，编译器会报错，这种情况下虽然没必要添加这个注解，但是添加上也没什么坏处
+
+8. **用标记接口定义类型**
+
+    - 标记接口：没有方法的接口（例如Serializable，Cloneable就是标记接口）
+
+    - 比注解好的地方
+        - 定义了一个被类实现的类型，可以做编译时检查
+        - 能更精确的做为目标
+
+    - 注解的优势
+        - 是注解框架的一部分
+
+    - 如何选择
+        - 标记适用于所有程序元素，用注解
+        - 方法只接受一种类型的参数，用标记接口
+
+## Lamda和Stream
+
+1. **lambdas优于匿名类**
+
+    - 忽略所有的lambda的参数类型除非这些类型的存在让程序更加清晰
+
+    - lambda没有名字和文档，如果lamba不是自解释的或者超过了3行，不要用lambda
+
+    - 用lambda代替枚举常量指定的类的形式，其lambda表达式是在static context期间构造的不能访问成员属性
+
+    - lambda中的this不是指向自己的，是指向外部类的
+
+    - 匿名类和lambda一样，没有可靠的实现序列化和反序列化，如果有需求的话用私有嵌套静态内部类
+
+2. **方法引用优于lambdas**
+
+    - 方法引用优于lambdas
+    
+3. **优先使用标准的函数式接口**
+
+    - 什么时候需要自己实现函数接口
+        - 它将被广泛使用，并且可以从描述性名称中受益
+        - 它拥有强大的契约
+        - 它会受益于自定义的默认方法
+
+    - 不要提供这样的重载方法，什么样的->在相同的参数位置上使用不同的函数接口
+
+    - 预置的函数接口
+
+        - 6个基本类型
+            1. UnaryOperator<T>   T apply(T t)
+            2. BinaryOperator<T>  T apply(T t1, T t2)
+            3. Predicate<T> boolean test(T t)
+            4. Function<T, R> R apply(T t)
+            5. Supplier<T>  T get()
+            6. Consumer<T>  void accept(T t)
+
+        - 每个基本类型有3个对于原始类型的变体（int, long, double），在前面加原始类型，如: 如LongBinaryOperator
+
+        - 当返回类型时原始类型时，对于Function有9个变体
+            - 参数和返回值都是原始类型，有6个, SrcToResult，如：LongToIntfunction
+            - 参数是泛型，返回是原始类型，有3个
+                - ToResultFunction 如: toDoubleFunction<T>
+
+        - 两个参数的9个
+        
