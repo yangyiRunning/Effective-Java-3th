@@ -564,4 +564,14 @@
                 - ToResultFunction 如: toDoubleFunction<T>
 
         - 两个参数的9个
-        
+            - BiPredicate<T, U>
+            - BiFunction<T, U, R>
+                - ToIntBiFunction<T, U>
+                - ToLongBiFunction<T, U>
+                - ToDoubleBiFunction<T, U>
+            - BiConsumer<T, U>
+                - ObjDoubleConsumer<T>
+                - ObjIntConsumer<T>
+                - ObjLongConsumer<T>
+
+        - BooleanSupplier
